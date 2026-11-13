@@ -1,0 +1,173 @@
+<!--
+  ==========================================================================
+  Expense & Budget Visualizer
+  ==========================================================================
+  A fully client-side personal expense tracker — no server, no install.
+
+  HOW TO USE
+  ----------
+  1. Open this file directly in any modern browser (Chrome, Firefox, Edge,
+     Safari). No local server or build step required.
+  2. Add an expense: fill in the Item Name, Amount, and select a Category,
+     then click "Add Expense".
+  3. Delete an expense: click the "Delete" button on any transaction row.
+  4. Add a custom category: type a name in the "Add Category" box and click
+     "Add Category". It will appear immediately in the category dropdown.
+  5. View monthly totals: click "Monthly Summary" in the top nav bar.
+  6. Toggle dark/light mode: click "🌙 Dark Mode" / "☀️ Light Mode" in the
+     top nav bar. Your preference is saved between sessions.
+
+  DATA STORAGE
+  ------------
+  All data (transactions, custom categories, theme preference) is stored in
+  your browser's localStorage under the keys:
+    evb_transactions  — your expense records
+    evb_categories    — your category list
+    evb_theme         — your chosen theme (light or dark)
+
+  Clearing your browser's localStorage (or using incognito mode) will reset
+  all data to defaults.
+
+  DEPENDENCIES
+  ------------
+  Chart.js v4.4.1 is loaded from the cdnjs CDN. An internet connection is
+  required the first time the chart renders. The app itself works offline;
+  only the pie chart requires network access.
+
+  FILES
+  -----
+    index.html       — this file (HTML structure)
+    css/style.css    — all styles, theming tokens, responsive layout
+    js/app.js        — all application logic (storage, rendering, events)
+  ==========================================================================
+-->
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Expense &amp; Budget Visualizer — track your personal spending with charts and monthly summaries">
+  <title>Expense &amp; Budget Visualizer</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script defer src="js/app.js"></script>
+</head>
+<body>
+  <div id="app">
+
+    <!-- ===== Top Navigation Bar ===== -->
+    <nav id="app-nav" aria-label="Main navigation">
+      <div class="nav-brand">💰 Expense & Budget Visualizer</div>
+      <span id="balance-total" aria-live="polite" aria-label="Total spending">$0.00</span>
+      <div class="nav-actions">
+        <button data-view="main" class="active" aria-pressed="true">Transactions</button>
+        <button data-view="summary" aria-pressed="false">Monthly Summary</button>
+        <button id="theme-toggle" aria-label="Switch to dark mode">🌙 Dark Mode</button>
+      </div>
+    </nav>
+
+    <!-- ===== Main Content ===== -->
+    <div id="app-content">
+
+      <!-- ===== Main View ===== -->
+      <section id="view-main" class="view active" aria-label="Transactions view">
+        <div class="main-left">
+
+          <!-- Add Transaction Form Card -->
+          <div class="card">
+            <h2>Add Expense</h2>
+            <form id="form-add-transaction" novalidate>
+              <div class="form-group">
+                <label for="input-name">Item Name</label>
+                <input
+                  type="text"
+                  id="input-name"
+                  name="name"
+                  placeholder="e.g. Coffee, Groceries"
+                  maxlength="100"
+                  autocomplete="off"
+                  required
+                >
+              </div>
+              <div class="form-group">
+                <label for="input-amount">Amount (USD)</label>
+                <input
+                  type="number"
+                  id="input-amount"
+                  name="amount"
+                  placeholder="0.00"
+                  min="0.01"
+                  max="999999999.99"
+                  step="0.01"
+                  required
+                >
+              </div>
+              <div class="form-group">
+                <label for="select-category">Category</label>
+                <select id="select-category" name="category" required>
+                  <option value="" disabled selected>-- Select a category --</option>
+                </select>
+                <span id="no-category-msg" hidden style="color:var(--text-muted);font-size:max(12px,0.8rem)">
+                  No categories available — add one below.
+                </span>
+              </div>
+              <button type="submit">Add Expense</button>
+            </form>
+          </div>
+
+          <!-- Transaction List Card -->
+          <div class="card">
+            <h2>Expense History</h2>
+            <ul id="transaction-list" aria-label="Transaction list" aria-live="polite">
+              <li class="empty-state">No expenses recorded yet. Add one above!</li>
+            </ul>
+          </div>
+
+        </div><!-- /.main-left -->
+
+        <div class="main-right">
+
+          <!-- Chart Card -->
+          <div class="card">
+            <h2>Spending by Category</h2>
+            <canvas id="spending-chart" aria-label="Pie chart of spending by category" role="img"></canvas>
+            <p id="chart-empty" aria-live="polite">No spending data available</p>
+          </div>
+
+          <!-- Add Category Form Card -->
+          <div class="card">
+            <h3>Add Category</h3>
+            <form id="form-add-category" novalidate>
+              <div class="form-group">
+                <label for="input-category-name">Category Name</label>
+                <input
+                  type="text"
+                  id="input-category-name"
+                  name="category-name"
+                  placeholder="e.g. Healthcare, Dining"
+                  maxlength="50"
+                  autocomplete="off"
+                  required
+                >
+              </div>
+              <button type="submit">Add Category</button>
+            </form>
+          </div>
+
+        </div><!-- /.main-right -->
+      </section><!-- /#view-main -->
+
+      <!-- ===== Summary View ===== -->
+      <section id="view-summary" class="view" style="display:none" aria-label="Monthly summary view">
+        <div class="card">
+          <h2>Monthly Summary</h2>
+          <div id="monthly-summary" aria-live="polite">
+            <p class="empty-state">No transactions recorded yet.</p>
+          </div>
+        </div>
+      </section><!-- /#view-summary -->
+
+    </div><!-- /#app-content -->
+  </div><!-- /#app -->
+</body>
+</html>

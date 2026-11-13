@@ -1,0 +1,806 @@
+/* ============================================================
+   Expense & Budget Visualizer — Stylesheet
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   1. CSS Custom Properties — Light Theme
+   ------------------------------------------------------------ */
+[data-theme="light"] {
+  /* Backgrounds */
+  --bg-color:       #f5f7fa;
+  --surface-color:  #ffffff;
+  --surface-alt:    #eef1f6;
+
+  /* Typography */
+  --text-color:     #1a1d23;
+  --text-muted:     #6b7280;
+
+  /* Inputs */
+  --input-bg:       #ffffff;
+  --input-border:   #d1d5db;
+  --input-focus:    #4f6ef7;
+
+  /* Accent (blue/indigo) */
+  --accent-color:   #4f6ef7;
+  --accent-hover:   #3a57e8;
+  --accent-text:    #ffffff;
+
+  /* Danger */
+  --danger-color:   #ef4444;
+  --danger-hover:   #dc2626;
+
+  /* Misc */
+  --border-color:   #e5e7eb;
+  --shadow:         0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-lg:      0 4px 16px rgba(0, 0, 0, 0.12);
+  --radius:         8px;
+}
+
+/* ------------------------------------------------------------
+   2. CSS Custom Properties — Dark Theme
+   ------------------------------------------------------------ */
+[data-theme="dark"] {
+  /* Backgrounds */
+  --bg-color:       #0f1117;
+  --surface-color:  #1c1f2a;
+  --surface-alt:    #252836;
+
+  /* Typography */
+  --text-color:     #e8eaf0;
+  --text-muted:     #9ca3af;
+
+  /* Inputs */
+  --input-bg:       #252836;
+  --input-border:   #3a3f52;
+  --input-focus:    #6b84fa;
+
+  /* Accent (lightened for dark-bg contrast) */
+  --accent-color:   #6b84fa;
+  --accent-hover:   #8599fb;
+  --accent-text:    #ffffff;
+
+  /* Danger */
+  --danger-color:   #f87171;
+  --danger-hover:   #ef4444;
+
+  /* Misc */
+  --border-color:   #2e3344;
+  --shadow:         0 2px 8px rgba(0, 0, 0, 0.32);
+  --shadow-lg:      0 4px 16px rgba(0, 0, 0, 0.48);
+  --radius:         8px;
+}
+
+/* ------------------------------------------------------------
+   3. CSS Reset & Base
+   ------------------------------------------------------------ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+}
+
+/* ------------------------------------------------------------
+   4. Base Body — uses custom properties + 200ms transitions
+   ------------------------------------------------------------ */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, sans-serif;
+  font-size: 1rem;         /* 16px — well above the 14px minimum */
+  min-font-size: 14px;     /* explicit floor */
+  line-height: 1.6;
+
+  background-color: var(--bg-color);
+  color: var(--text-color);
+
+  /* Theme-switch transition */
+  transition: background-color 200ms ease, color 200ms ease;
+}
+
+/* Enforce 14px minimum across all text-bearing elements */
+body, p, span, li, td, th, label, small, figcaption, caption {
+  font-size: max(14px, 1rem);
+}
+
+/* ------------------------------------------------------------
+   5. Themed Element Transitions (200ms on background & color)
+   ------------------------------------------------------------ */
+
+/* Surfaces */
+header,
+nav,
+main,
+section,
+aside,
+footer,
+.card,
+.surface {
+  transition: background-color 200ms ease, color 200ms ease,
+              border-color 200ms ease;
+}
+
+/* Form controls */
+input,
+select,
+textarea,
+button {
+  transition: background-color 200ms ease, color 200ms ease,
+              border-color 200ms ease, box-shadow 200ms ease;
+}
+
+/* Any element carrying a background or color driven by custom props */
+a,
+label,
+h1, h2, h3, h4, h5, h6 {
+  transition: color 200ms ease;
+}
+
+/* ------------------------------------------------------------
+   6. Typography Scale
+   ------------------------------------------------------------ */
+h1 { font-size: clamp(1.5rem, 3vw, 2rem);   font-weight: 700; }
+h2 { font-size: clamp(1.25rem, 2.5vw, 1.5rem); font-weight: 600; }
+h3 { font-size: clamp(1.1rem, 2vw, 1.25rem); font-weight: 600; }
+h4 { font-size: 1rem; font-weight: 600; }
+
+p  { font-size: max(14px, 1rem); }
+
+/* ------------------------------------------------------------
+   7. Base Link Styles
+   ------------------------------------------------------------ */
+a {
+  color: var(--accent-color);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+/* ------------------------------------------------------------
+   8. Base Button Styles
+   ------------------------------------------------------------ */
+button {
+  cursor: pointer;
+  font-family: inherit;
+  font-size: max(14px, 0.9rem);
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.5rem 1rem;
+  background-color: var(--accent-color);
+  color: var(--accent-text);
+}
+
+button:hover {
+  background-color: var(--accent-hover);
+}
+
+button:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+button.btn-danger {
+  background-color: var(--danger-color);
+  color: #ffffff;
+}
+
+button.btn-danger:hover {
+  background-color: var(--danger-hover);
+}
+
+button.btn-ghost {
+  background-color: transparent;
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+}
+
+button.btn-ghost:hover {
+  background-color: var(--surface-alt);
+}
+
+/* ------------------------------------------------------------
+   9. Base Form Control Styles
+   ------------------------------------------------------------ */
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: max(14px, 1rem);
+  color: var(--text-color);
+  background-color: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.75rem;
+  width: 100%;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-muted);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--input-focus);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--input-focus) 20%, transparent);
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ------------------------------------------------------------
+   10. Utility Classes
+   ------------------------------------------------------------ */
+.text-muted   { color: var(--text-muted); }
+.text-accent  { color: var(--accent-color); }
+.text-danger  { color: var(--danger-color); }
+
+.surface {
+  background-color: var(--surface-color);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ------------------------------------------------------------
+   11. Layout Placeholders (populated in task 3.2)
+   ------------------------------------------------------------ */
+
+/* These selectors are pre-wired with theme transitions so that
+   when the layout is fleshed out in task 3.2, all colour
+   switches happen within the 200ms budget automatically. */
+
+#app-nav {
+  background-color: var(--surface-color);
+  border-bottom: 1px solid var(--border-color);
+  transition: background-color 200ms ease, border-color 200ms ease;
+}
+
+#balance-total {
+  color: var(--text-color);
+  transition: color 200ms ease;
+}
+
+#transaction-list {
+  background-color: var(--surface-color);
+  transition: background-color 200ms ease;
+  overflow-y: auto;
+}
+
+#spending-chart,
+#chart-empty {
+  transition: opacity 200ms ease;
+}
+
+#monthly-summary {
+  background-color: var(--surface-color);
+  transition: background-color 200ms ease;
+}
+
+/* Field error messages */
+.field-error {
+  color: var(--danger-color);
+  font-size: max(12px, 0.8rem);
+  margin-top: 0.25rem;
+  display: block;
+  transition: color 200ms ease;
+}
+
+/* ============================================================
+   12. Layout — Task 3.2: Responsive Grid/Flexbox Layout
+   ============================================================
+   Mobile-first. Breakpoints:
+     640px  — tablet  (sm)
+     1024px — desktop (lg)
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   12.1 Body — prevent horizontal overflow at any width
+   ------------------------------------------------------------ */
+body {
+  overflow-x: hidden;
+  min-width: 320px;
+}
+
+/* ------------------------------------------------------------
+   12.2 App wrapper
+   ------------------------------------------------------------ */
+#app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ------------------------------------------------------------
+   12.3 Top navigation bar
+   Sticky at the top; always visible — satisfies Requirement 5.2.
+   Flexbox: balance area on the left, nav actions on the right.
+   ------------------------------------------------------------ */
+#app-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+
+  padding: 0.625rem 1rem;
+
+  /* Slight drop shadow to visually separate from content */
+  box-shadow: var(--shadow);
+}
+
+/* Logo / app title area inside the nav (optional element) */
+#app-nav .nav-brand {
+  font-weight: 700;
+  font-size: max(14px, 1rem);
+  color: var(--text-color);
+  white-space: nowrap;
+}
+
+/* Balance sits in the nav on the left side */
+#balance-total {
+  font-size: max(14px, 1rem);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Right-hand cluster: view buttons + theme toggle */
+#app-nav .nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;          /* wraps on very narrow screens rather than overflowing */
+}
+
+/* Nav view buttons inherit base button styles; override for ghost look */
+#app-nav [data-view] {
+  background-color: transparent;
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  font-size: max(14px, 0.875rem);
+  padding: 0.375rem 0.75rem;
+  white-space: nowrap;
+}
+
+#app-nav [data-view]:hover,
+#app-nav [data-view].active {
+  background-color: var(--accent-color);
+  color: var(--accent-text);
+  border-color: var(--accent-color);
+}
+
+#app-nav [data-view]:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+#theme-toggle {
+  background-color: transparent;
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  font-size: max(14px, 0.875rem);
+  padding: 0.375rem 0.75rem;
+  white-space: nowrap;
+}
+
+#theme-toggle:hover {
+  background-color: var(--surface-alt);
+}
+
+#theme-toggle:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+/* ------------------------------------------------------------
+   12.4 Page content wrapper — centred, max-width constrained
+   ------------------------------------------------------------ */
+#app-content {
+  flex: 1;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;            /* Mobile: comfortable side padding */
+  box-sizing: border-box;
+}
+
+@media (min-width: 640px) {
+  #app-content {
+    padding: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  #app-content {
+    padding: 2rem;
+  }
+}
+
+/* ------------------------------------------------------------
+   12.5 Views — show/hide via class swap (NavController)
+   ------------------------------------------------------------ */
+.view {
+  display: none;
+  width: 100%;
+}
+
+.view.active {
+  display: block;
+}
+
+/* Fallback: if JS hasn't run yet, show main view */
+#view-main {
+  display: block;   /* overridden to `none` by JS when switching to summary */
+}
+
+#view-summary {
+  display: none;
+}
+
+/* ------------------------------------------------------------
+   12.6 #view-main — mobile: single column, tablet+: two-column grid
+   ------------------------------------------------------------ */
+
+/* On mobile everything stacks */
+#view-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* Left panel: form + transaction list (stacked) */
+.main-left {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-width: 0;             /* prevent grid blowout */
+}
+
+/* Right panel: chart + category manager */
+.main-right {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+/* Tablet (640px+): switch to two-column grid */
+@media (min-width: 640px) {
+  #view-main {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    align-items: start;
+  }
+}
+
+/* Desktop (1024px+): give the left panel slightly more room */
+@media (min-width: 1024px) {
+  #view-main {
+    grid-template-columns: 3fr 2fr;
+    gap: 2rem;
+  }
+}
+
+/* ------------------------------------------------------------
+   12.7 Card wrapper — shared surface style for each panel block
+   ------------------------------------------------------------ */
+.card {
+  background-color: var(--surface-color);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.25rem;
+  min-width: 0;
+}
+
+/* Section headings inside cards */
+.card h2,
+.card h3 {
+  margin-bottom: 0.75rem;
+  color: var(--text-color);
+}
+
+/* ------------------------------------------------------------
+   12.8 Add-transaction form
+   ------------------------------------------------------------ */
+#form-add-transaction {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+#form-add-transaction .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+#form-add-transaction label {
+  font-size: max(14px, 0.875rem);
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+#form-add-transaction button[type="submit"] {
+  align-self: flex-start;
+  padding: 0.5rem 1.25rem;
+}
+
+/* ------------------------------------------------------------
+   12.9 Transaction list — scrollable, Requirement 4.3
+   ------------------------------------------------------------ */
+#transaction-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+
+  /* Scrollable when content overflows */
+  max-height: 400px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+
+  /* Thin custom scrollbar where supported */
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+}
+
+#transaction-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+#transaction-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#transaction-list::-webkit-scrollbar-thumb {
+  background-color: var(--border-color);
+  border-radius: 3px;
+}
+
+/* Individual transaction row */
+#transaction-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.625rem 0;
+  border-bottom: 1px solid var(--border-color);
+  font-size: max(14px, 0.9rem);
+}
+
+#transaction-list li:last-child {
+  border-bottom: none;
+}
+
+/* Info cluster (name, category, date) */
+#transaction-list .txn-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+  flex: 1;
+}
+
+#transaction-list .txn-name {
+  font-weight: 600;
+  color: var(--text-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#transaction-list .txn-meta {
+  font-size: max(12px, 0.8rem);
+  color: var(--text-muted);
+}
+
+/* Amount + delete cluster */
+#transaction-list .txn-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+#transaction-list .txn-amount {
+  font-weight: 600;
+  color: var(--text-color);
+  white-space: nowrap;
+}
+
+/* Small delete button */
+#transaction-list button[data-id] {
+  background-color: transparent;
+  color: var(--danger-color);
+  border: 1px solid var(--danger-color);
+  padding: 0.25rem 0.5rem;
+  font-size: max(12px, 0.75rem);
+  line-height: 1;
+  border-radius: var(--radius);
+  flex-shrink: 0;
+}
+
+#transaction-list button[data-id]:hover {
+  background-color: var(--danger-color);
+  color: #ffffff;
+}
+
+/* Empty-state message */
+#transaction-list .empty-state {
+  padding: 1.5rem 0;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: max(14px, 0.9rem);
+}
+
+/* ------------------------------------------------------------
+   12.10 Chart area
+   ------------------------------------------------------------ */
+#spending-chart {
+  width: 100% !important;
+  max-width: 100%;
+  height: auto !important;
+  display: block;
+}
+
+#chart-empty {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 2rem 0;
+  font-size: max(14px, 0.9rem);
+}
+
+/* ------------------------------------------------------------
+   12.11 Add-category form
+   ------------------------------------------------------------ */
+#form-add-category {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+#form-add-category .form-group {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+#form-add-category button[type="submit"] {
+  flex-shrink: 0;
+  padding: 0.5rem 1rem;
+  /* Align with input height; adjust if needed */
+  margin-top: 0;
+  align-self: flex-end;
+}
+
+/* ------------------------------------------------------------
+   12.12 #view-summary — single column layout
+   ------------------------------------------------------------ */
+#view-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* Monthly summary container */
+#monthly-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Individual month section */
+#monthly-summary section {
+  background-color: var(--surface-color);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1rem 1.25rem;
+}
+
+#monthly-summary section h3 {
+  margin-bottom: 0.5rem;
+  font-size: max(14px, 1rem);
+  color: var(--text-color);
+}
+
+#monthly-summary .month-stats {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  font-size: max(14px, 0.9rem);
+  color: var(--text-muted);
+}
+
+#monthly-summary .month-total {
+  font-weight: 700;
+  color: var(--accent-color);
+}
+
+#monthly-summary .empty-state {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 2rem 0;
+  font-size: max(14px, 0.9rem);
+}
+
+/* ------------------------------------------------------------
+   12.13 Utility layout helpers
+   ------------------------------------------------------------ */
+
+/* Full-width block; prevents child from exceeding parent */
+.w-full { width: 100%; }
+
+/* Flex row with gap */
+.flex-row {
+  display: flex;
+  flex-direction: row;
+  gap: 0.75rem;
+}
+
+/* Spacer between flex siblings */
+.spacer { flex: 1; }
+
+/* ------------------------------------------------------------
+   12.14 Section headings used outside cards
+   ------------------------------------------------------------ */
+.section-heading {
+  font-size: max(14px, 1.125rem);
+  font-weight: 700;
+  color: var(--text-color);
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.375rem;
+  border-bottom: 2px solid var(--accent-color);
+}
+
+/* ------------------------------------------------------------
+   12.15 Defensive 320px safety net
+   Make every direct child of the content area honour the
+   container's width so nothing triggers horizontal scroll.
+   ------------------------------------------------------------ */
+#app-content > * {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Ensure images, canvases, and embeds don't overflow */
+img,
+canvas,
+iframe,
+video,
+svg {
+  max-width: 100%;
+  height: auto;
+}

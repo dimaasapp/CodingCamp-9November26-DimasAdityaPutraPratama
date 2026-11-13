@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Expense & Budget Visualizer — Test Runner</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 15px;
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 24px;
+      line-height: 1.6;
+    }
+
+    h1 { font-size: 1.5rem; color: #f8fafc; margin-bottom: 4px; }
+    .subtitle { color: #94a3b8; font-size: 0.875rem; margin-bottom: 28px; }
+
+    .summary-bar {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 28px;
+      padding: 14px 20px;
+      background: #1e293b;
+      border-radius: 10px;
+      border: 1px solid #334155;
+      font-size: 0.95rem;
+    }
+    .summary-bar .stat { display: flex; flex-direction: column; gap: 2px; }
+    .summary-bar .stat-value { font-size: 1.6rem; font-weight: 700; line-height: 1; }
+    .summary-bar .stat-label { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: .05em; }
+    .total-val  { color: #f8fafc; }
+    .pass-val   { color: #34d399; }
+    .fail-val   { color: #f87171; }
+
+    .suite {
+      margin-bottom: 24px;
+    }
+    .suite-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #cbd5e1;
+      padding: 8px 0 8px 0;
+      border-bottom: 1px solid #334155;
+      margin-bottom: 10px;
+    }
+    .suite-title span {
+      font-size: 0.75rem;
+      font-weight: 400;
+      color: #64748b;
+      margin-left: 8px;
+    }
+
+    .test {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 7px 10px;
+      border-radius: 6px;
+      margin-bottom: 4px;
+      font-size: 0.875rem;
+    }
+    .test.pass { background: #052e16; border: 1px solid #166534; }
+    .test.fail { background: #2d0909; border: 1px solid #991b1b; }
+    .badge {
+      flex-shrink: 0;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      letter-spacing: .04em;
+      margin-top: 1px;
+    }
+    .badge.pass { background: #166534; color: #bbf7d0; }
+    .badge.fail { background: #991b1b; color: #fecaca; }
+    .test-label { flex: 1; color: #cbd5e1; }
+    .test-label code {
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      background: #1e293b;
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-size: 0.82rem;
+    }
+    .test-detail {
+      flex: 1;
+      font-size: 0.8rem;
+      color: #f87171;
+      margin-top: 2px;
+    }
+
+    .error-block {
+      margin-top: 4px;
+      padding: 6px 10px;
+      background: #1c0a0a;
+      border-left: 3px solid #f87171;
+      border-radius: 0 4px 4px 0;
+      font-family: monospace;
+      font-size: 0.8rem;
+      color: #fca5a5;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    footer {
+      margin-top: 32px;
+      padding-top: 16px;
+      border-top: 1px solid #334155;
+      font-size: 0.75rem;
+      color: #475569;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🧪 Expense &amp; Budget Visualizer — Test Runner</h1>
+<p class="subtitle">Unit tests for StorageManager, Validator, computeBalance, computeChartData, monthlySummary, formatCurrency &amp; validateCategoryName · Opens directly as file:// — no server needed</p>
+
+<div class="summary-bar">
+  <div class="stat">
+    <span class="stat-value total-val" id="stat-total">—</span>
+    <span class="stat-label">Total</span>
+  </div>
+  <div class="stat">
+    <span class="stat-value pass-val" id="stat-pass">—</span>
+    <span class="stat-label">Passed</span>
+  </div>
+  <div class="stat">
+    <span class="stat-value fail-val" id="stat-fail">—</span>
+    <span class="stat-label">Failed</span>
+  </div>
+</div>
+
+<div id="output"></div>
+
+<footer id="footer"></footer>
+
+<script>
+/* =====================================================================
+   INLINE PURE-LOGIC COPY
+   The functions below are copied verbatim from js/app.js so this file
+   works standalone without any script-src loading.  When app.js changes,
+   keep this section in sync.
+   ===================================================================== */
+
+// ── Key constants ──────────────────────────────────────────────────────
+const KEYS = {
+  TRANSACTIONS: 'evb_transactions',
+  CATEGORIES:   'evb_categories',
+  THEME:        'evb_theme',
+};
+
+// ── Safe defaults ──────────────────────────────────────────────────────
+const DEFAULTS = {
+  transactions: [],
+  categories:   ['Food', 'Transport', 'Fun'],
+  theme:        'light',
+};
+
+// ── StorageManager ─────────────────────────────────────────────────────
+const StorageManager = {
+  load() {
+    let transactions = DEFAULTS.transactions;
+    try {
+      const raw = localStorage.getItem(KEYS.TRANSACTIONS);
+      if (raw !== null) {
+        const parsed = JSON.parse(raw);
+        transactions = Array.isArray(parsed) ? parsed : DEFAULTS.transactions;
+      }
+    } catch (e) {
+      console.warn('[StorageManager] Failed to parse transactions; using default.', e);
+      transactions = DEFAULTS.transactions;
+    }
+
+    let categories = DEFAULTS.categories;
+    try {
+      const raw = localStorage.getItem(KEYS.CATEGORIES);
+      if (raw !== null) {
+        const parsed = JSON.parse(raw);
+        categories = Array.isArray(parsed) ? parsed : DEFAULTS.categories;
+      }
+    } catch (e) {
+      console.warn('[StorageManager] Failed to parse categories; using default.', e);
+      categories = DEFAULTS.categories;
+    }
+
+    let theme = DEFAULTS.theme;
+    try {
+      const raw = localStorage.getItem(KEYS.THEME);
+      if (raw === 'light' || raw === 'dark') {
+        theme = raw;
+      }
+    } catch (e) {
+      console.warn('[StorageManager] Failed to read theme; using default.', e);
+      theme = DEFAULTS.theme;
+    }
+
+    return { transactions, categories, theme };
+  },
+
+  save(state) {
+    const trySet = (key, value) => {
+      try {
+        localStorage.setItem(key, value);
+      } catch (e) {
+        if (
+          e instanceof DOMException &&
+          (e.name === 'QuotaExceededError' ||
+           e.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+           e.code === 22)
+        ) {
+          console.warn(
+            `[StorageManager] localStorage quota exceeded while saving key "${key}".`, e
+          );
+        } else {
+          throw e;
+        }
+      }
+    };
+
+    trySet(KEYS.TRANSACTIONS, JSON.stringify(state.transactions));
+    trySet(KEYS.CATEGORIES,   JSON.stringify(state.categories));
+    trySet(KEYS.THEME, state.theme);
+  },
+};
+
+// ── Validator ──────────────────────────────────────────────────────────
+const Validator = {
+  validateName(value) {
+    const trimmed = (value ?? '').trim();
+    if (trimmed.length === 0) {
+      return 'Item name is required.';
+    }
+    if (trimmed.length > 100) {
+      return 'Item name must be 100 characters or fewer.';
+    }
+    return null;
+  },
+
+  validateAmount(value) {
+    const str = String(value ?? '').trim();
+    if (str === '') {
+      return 'Amount is required.';
+    }
+    const num = parseFloat(str);
+    if (!isFinite(num) || String(num) !== str && !/^-?\d+(\.\d+)?$/.test(str)) {
+      return 'Amount must be a valid number between 0.01 and 999,999,999.99 with up to two decimal places.';
+    }
+    if (num < 0.01 || num > 999999999.99) {
+      return 'Amount must be between 0.01 and 999,999,999.99.';
+    }
+    const decimalIndex = str.indexOf('.');
+    if (decimalIndex !== -1 && str.length - decimalIndex - 1 > 2) {
+      return 'Amount must have at most two decimal places.';
+    }
+    return null;
+  },
+
+  validateCategory(value) {
+    if (value === null || value === undefined || String(value).trim() === '') {
+      return 'Please select a category.';
+    }
+    return null;
+  },
+};
+
+// ── computeBalance ─────────────────────────────────────────────────────
+function computeBalance(transactions) {
+  return transactions.reduce((sum, t) => sum + t.amount, 0);
+}
+
+// ── computeChartData ───────────────────────────────────────────────────
+function computeChartData(transactions) {
+  if (!transactions || transactions.length === 0) return null;
+
+  const totals = {};
+  transactions.forEach(t => {
+    totals[t.category] = (totals[t.category] || 0) + t.amount;
+  });
+
+  const categories = Object.keys(totals).filter(cat => totals[cat] > 0);
+  if (categories.length === 0) return null;
+
+  const grandTotal = categories.reduce((sum, cat) => sum + totals[cat], 0);
+  const percentages = categories.map(cat =>
+    parseFloat((totals[cat] / grandTotal * 100).toFixed(1))
+  );
+  const labels = categories.map((cat, i) => `${cat} ${percentages[i]}%`);
+
+  return {
+    labels,
+    percentages,
+    amounts: categories.map(cat => totals[cat]),
+  };
+}
+
+// ── monthlySummary ─────────────────────────────────────────────────────
+function monthlySummary(transactions) {
+  const groups = {};
+  transactions.forEach(t => {
+    const date = new Date(t.date);
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    if (!groups[key]) {
+      groups[key] = { key, year: String(date.getFullYear()), monthIndex: date.getMonth(), total: 0, count: 0 };
+    }
+    groups[key].total += t.amount;
+    groups[key].count += 1;
+  });
+
+  return Object.values(groups)
+    .sort((a, b) => b.key.localeCompare(a.key));
+}
+
+// ── formatCurrency ─────────────────────────────────────────────────────
+function formatCurrency(amount) {
+  return amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+}
+
+// ── validateCategoryName ───────────────────────────────────────────────
+function validateCategoryName(value, existingCategories) {
+  const trimmed = (value ?? '').trim();
+  if (trimmed.length === 0) {
+    return 'Category name cannot be blank.';
+  }
+  if (trimmed.length > 50) {
+    return 'Category name must be 50 characters or fewer.';
+  }
+  const isDuplicate = existingCategories.some(
+    c => c.trim().toLowerCase() === trimmed.toLowerCase()
+  );
+  if (isDuplicate) {
+    return 'That category already exists.';
+  }
+  return null;
+}
+
+/* =====================================================================
+   TEST HARNESS
+   ===================================================================== */
+
+const results = [];   // { suite, label, pass, error }
+
+/** Register and immediately run one test. */
+function test(suite, label, fn) {
+  try {
+    fn();
+    results.push({ suite, label, pass: true, error: null });
+  } catch (err) {
+    results.push({ suite, label, pass: false, error: String(err) });
+  }
+}
+
+/** Simple equality assertion. */
+function assertEqual(actual, expected, msg) {
+  if (actual !== expected) {
+    throw new Error(
+      (msg ? msg + '\n' : '') +
+      `  Expected: ${JSON.stringify(expected)}\n` +
+      `  Actual:   ${JSON.stringify(actual)}`
+    );
+  }
+}
+
+/** Assert value is null. */
+function assertNull(actual, msg) {
+  if (actual !== null) {
+    throw new Error((msg ? msg + '\n' : '') + `  Expected null but got: ${JSON.stringify(actual)}`);
+  }
+}
+
+/** Assert value is not null. */
+function assertNotNull(actual, msg) {
+  if (actual === null || actual === undefined) {
+    throw new Error((msg ? msg + '\n' : '') + '  Expected a non-null value but got null/undefined');
+  }
+}
+
+/** Assert value is a non-empty string (i.e. an error message). */
+function assertError(actual, msg) {
+  if (typeof actual !== 'string' || actual.length === 0) {
+    throw new Error(
+      (msg ? msg + '\n' : '') +
+      `  Expected a non-empty error string but got: ${JSON.stringify(actual)}`
+    );
+  }
+}
+
+/** Deep-equal for plain objects/arrays (simple JSON-based). */
+function assertDeepEqual(actual, expected, msg) {
+  const a = JSON.stringify(actual);
+  const e = JSON.stringify(expected);
+  if (a !== e) {
+    throw new Error(
+      (msg ? msg + '\n' : '') +
+      `  Expected: ${e}\n` +
+      `  Actual:   ${a}`
+    );
+  }
+}
+
+/* =====================================================================
+   HELPER — wipe only EVB keys from localStorage between storage tests
+   ===================================================================== */
+function clearEvbStorage() {
+  localStorage.removeItem(KEYS.TRANSACTIONS);
+  localStorage.removeItem(KEYS.CATEGORIES);
+  localStorage.removeItem(KEYS.THEME);
+}
+
+/* =====================================================================
+   SUITE 1 — Validator.validateName
+   ===================================================================== */
+
+test('Validator.validateName', 'Empty string → returns error', () => {
+  assertError(Validator.validateName(''), 'Empty string must be rejected');
+});
+
+test('Validator.validateName', 'Whitespace-only "   " → returns error', () => {
+  assertError(Validator.validateName('   '), 'Whitespace-only must be rejected');
+});
+
+test('Validator.validateName', 'Tab/newline-only "\\t\\n" → returns error', () => {
+  assertError(Validator.validateName('\t\n'), 'Tab+newline only must be rejected');
+});
+
+test('Validator.validateName', '"Coffee" → returns null (valid)', () => {
+  assertNull(Validator.validateName('Coffee'), '"Coffee" is a valid name');
+});
+
+test('Validator.validateName', '"  Coffee  " → returns null (trims okay)', () => {
+  assertNull(Validator.validateName('  Coffee  '), 'Names with surrounding spaces are trimmed and valid');
+});
+
+test('Validator.validateName', '101-char string → returns error (too long)', () => {
+  assertError(Validator.validateName('a'.repeat(101)), 'Names over 100 chars must be rejected');
+});
+
+test('Validator.validateName', '100-char string → returns null (exactly at limit)', () => {
+  assertNull(Validator.validateName('a'.repeat(100)), 'Exactly 100 chars is valid');
+});
+
+test('Validator.validateName', 'null → returns error (nullish input)', () => {
+  assertError(Validator.validateName(null), 'null input must be rejected');
+});
+
+test('Validator.validateName', 'undefined → returns error (nullish input)', () => {
+  assertError(Validator.validateName(undefined), 'undefined input must be rejected');
+});
+
+/* =====================================================================
+   SUITE 2 — Validator.validateAmount
+   ===================================================================== */
+
+test('Validator.validateAmount', '"0" → returns error (below minimum)', () => {
+  assertError(Validator.validateAmount('0'), '"0" is below minimum 0.01');
+});
+
+test('Validator.validateAmount', '"0.00" → returns error (below minimum)', () => {
+  assertError(Validator.validateAmount('0.00'), '"0.00" is below minimum 0.01');
+});
+
+test('Validator.validateAmount', '"0.009" → returns error (below minimum)', () => {
+  assertError(Validator.validateAmount('0.009'), '"0.009" should be caught by either range or dp check');
+});
+
+test('Validator.validateAmount', '"0.01" → returns null (minimum valid value)', () => {
+  assertNull(Validator.validateAmount('0.01'), '"0.01" is the minimum valid amount');
+});
+
+test('Validator.validateAmount', '"999999999.99" → returns null (maximum valid value)', () => {
+  assertNull(Validator.validateAmount('999999999.99'), '"999999999.99" is the maximum valid amount');
+});
+
+test('Validator.validateAmount', '"1000000000" → returns error (above maximum)', () => {
+  assertError(Validator.validateAmount('1000000000'), 'Value above max must be rejected');
+});
+
+test('Validator.validateAmount', '"1.999" → returns error (3 decimal places)', () => {
+  assertError(Validator.validateAmount('1.999'), '3 decimal places must be rejected');
+});
+
+test('Validator.validateAmount', '"1.99" → returns null (2 decimal places valid)', () => {
+  assertNull(Validator.validateAmount('1.99'), '2 decimal places is valid');
+});
+
+test('Validator.validateAmount', '"1.10" → returns null (trailing zero, 2 dp valid)', () => {
+  assertNull(Validator.validateAmount('1.10'), 'Trailing zero within 2 dp is valid');
+});
+
+test('Validator.validateAmount', '"abc" → returns error (non-numeric)', () => {
+  assertError(Validator.validateAmount('abc'), 'Non-numeric string must be rejected');
+});
+
+test('Validator.validateAmount', '"1.2abc" → returns error (partial numeric)', () => {
+  assertError(Validator.validateAmount('1.2abc'), 'Partially numeric string must be rejected');
+});
+
+test('Validator.validateAmount', 'Empty string "" → returns error (required)', () => {
+  assertError(Validator.validateAmount(''), 'Empty amount must be rejected');
+});
+
+test('Validator.validateAmount', '"-5" → returns error (negative)', () => {
+  assertError(Validator.validateAmount('-5'), 'Negative amount must be rejected');
+});
+
+test('Validator.validateAmount', '"1e2" → returns error (scientific notation)', () => {
+  assertError(Validator.validateAmount('1e2'), 'Scientific notation must be rejected (not a plain decimal)');
+});
+
+test('Validator.validateAmount', 'null → returns error (nullish)', () => {
+  assertError(Validator.validateAmount(null), 'null must be rejected');
+});
+
+test('Validator.validateAmount', 'undefined → returns error (nullish)', () => {
+  assertError(Validator.validateAmount(undefined), 'undefined must be rejected');
+});
+
+/* =====================================================================
+   SUITE 3 — Validator.validateCategory
+   ===================================================================== */
+
+test('Validator.validateCategory', 'Empty string "" → returns error', () => {
+  assertError(Validator.validateCategory(''), 'Empty category must be rejected');
+});
+
+test('Validator.validateCategory', 'Whitespace-only "  " → returns error', () => {
+  assertError(Validator.validateCategory('  '), 'Whitespace-only category must be rejected');
+});
+
+test('Validator.validateCategory', 'null → returns error', () => {
+  assertError(Validator.validateCategory(null), 'null category must be rejected');
+});
+
+test('Validator.validateCategory', 'undefined → returns error', () => {
+  assertError(Validator.validateCategory(undefined), 'undefined category must be rejected');
+});
+
+test('Validator.validateCategory', '"Food" → returns null (valid)', () => {
+  assertNull(Validator.validateCategory('Food'), '"Food" is a valid category selection');
+});
+
+test('Validator.validateCategory', '"Custom Category" → returns null (valid)', () => {
+  assertNull(Validator.validateCategory('Custom Category'), 'Any non-empty string is a valid category');
+});
+
+/* =====================================================================
+   SUITE 4 — StorageManager.load() — defaults when nothing stored
+   ===================================================================== */
+
+test('StorageManager.load — defaults', 'All keys missing → transactions = []', () => {
+  clearEvbStorage();
+  const result = StorageManager.load();
+  assertDeepEqual(result.transactions, [], 'Should default to empty transactions array');
+});
+
+test('StorageManager.load — defaults', 'All keys missing → categories = ["Food","Transport","Fun"]', () => {
+  clearEvbStorage();
+  const result = StorageManager.load();
+  assertDeepEqual(result.categories, ['Food', 'Transport', 'Fun'], 'Should default to the 3 preset categories');
+});
+
+test('StorageManager.load — defaults', 'All keys missing → theme = "light"', () => {
+  clearEvbStorage();
+  const result = StorageManager.load();
+  assertEqual(result.theme, 'light', 'Should default to light theme');
+});
+
+/* =====================================================================
+   SUITE 5 — StorageManager.save() then load() — round-trip
+   ===================================================================== */
+
+test('StorageManager.save → load', 'Saved transaction round-trips with correct id', () => {
+  clearEvbStorage();
+  const tx = { id: 'abc-123', name: 'Test Item', amount: 5.00, category: 'Food', date: '2024-01-01T00:00:00Z' };
+  StorageManager.save({ transactions: [tx], categories: ['Food'], theme: 'dark' });
+  const result = StorageManager.load();
+  assertEqual(result.transactions.length, 1, 'Should load exactly 1 transaction');
+  assertEqual(result.transactions[0].id, 'abc-123', 'Transaction id must survive round-trip');
+});
+
+test('StorageManager.save → load', 'Saved transaction round-trips with correct name', () => {
+  clearEvbStorage();
+  const tx = { id: 'abc-123', name: 'Test Item', amount: 5.00, category: 'Food', date: '2024-01-01T00:00:00Z' };
+  StorageManager.save({ transactions: [tx], categories: ['Food'], theme: 'dark' });
+  const result = StorageManager.load();
+  assertEqual(result.transactions[0].name, 'Test Item', 'Transaction name must survive round-trip');
+});
+
+test('StorageManager.save → load', 'Saved transaction round-trips with correct amount', () => {
+  clearEvbStorage();
+  const tx = { id: 'abc-123', name: 'Test Item', amount: 5.00, category: 'Food', date: '2024-01-01T00:00:00Z' };
+  StorageManager.save({ transactions: [tx], categories: ['Food'], theme: 'dark' });
+  const result = StorageManager.load();
+  assertEqual(result.transactions[0].amount, 5.00, 'Transaction amount must survive round-trip');
+});
+
+test('StorageManager.save → load', 'Saved transaction round-trips with correct category', () => {
+  clearEvbStorage();
+  const tx = { id: 'abc-123', name: 'Test Item', amount: 5.00, category: 'Food', date: '2024-01-01T00:00:00Z' };
+  StorageManager.save({ transactions: [tx], categories: ['Food'], theme: 'dark' });
+  const result = StorageManager.load();
+  assertEqual(result.transactions[0].category, 'Food', 'Transaction category must survive round-trip');
+});
+
+test('StorageManager.save → load', 'Saved transaction round-trips with correct date', () => {
+  clearEvbStorage();
+  const tx = { id: 'abc-123', name: 'Test Item', amount: 5.00, category: 'Food', date: '2024-01-01T00:00:00Z' };
+  StorageManager.save({ transactions: [tx], categories: ['Food'], theme: 'dark' });
+  const result = StorageManager.load();
+  assertEqual(result.transactions[0].date, '2024-01-01T00:00:00Z', 'Transaction date must survive round-trip');
+});
+
+test('StorageManager.save → load', 'Saved categories round-trip correctly', () => {
+  clearEvbStorage();
+  StorageManager.save({ transactions: [], categories: ['Food', 'Custom'], theme: 'light' });
+  const result = StorageManager.load();
+  assertDeepEqual(result.categories, ['Food', 'Custom'], 'Categories must survive round-trip');
+});
+
+test('StorageManager.save → load', 'Saved theme "dark" round-trips correctly', () => {
+  clearEvbStorage();
+  StorageManager.save({ transactions: [], categories: ['Food'], theme: 'dark' });
+  const result = StorageManager.load();
+  assertEqual(result.theme, 'dark', 'Theme "dark" must survive round-trip');
+});
+
+test('StorageManager.save → load', 'Saved theme "light" round-trips correctly', () => {
+  clearEvbStorage();
+  StorageManager.save({ transactions: [], categories: ['Food'], theme: 'light' });
+  const result = StorageManager.load();
+  assertEqual(result.theme, 'light', 'Theme "light" must survive round-trip');
+});
+
+test('StorageManager.save → load', 'Multiple transactions all survive round-trip', () => {
+  clearEvbStorage();
+  const txs = [
+    { id: '1', name: 'Coffee', amount: 3.50, category: 'Food', date: '2024-06-01T08:00:00Z' },
+    { id: '2', name: 'Bus',    amount: 1.25, category: 'Transport', date: '2024-06-02T09:00:00Z' },
+    { id: '3', name: 'Movie',  amount: 12.00, category: 'Fun', date: '2024-06-03T18:00:00Z' },
+  ];
+  StorageManager.save({ transactions: txs, categories: ['Food', 'Transport', 'Fun'], theme: 'light' });
+  const result = StorageManager.load();
+  assertEqual(result.transactions.length, 3, 'All 3 transactions must be loaded');
+  assertEqual(result.transactions[1].name, 'Bus', 'Second transaction name must match');
+  assertEqual(result.transactions[2].amount, 12.00, 'Third transaction amount must match');
+});
+
+/* =====================================================================
+   SUITE 6 — StorageManager.load() — corruption fallback
+   ===================================================================== */
+
+test('StorageManager.load — corruption', 'evb_transactions = "NOT_JSON" → transactions defaults to []', () => {
+  clearEvbStorage();
+  localStorage.setItem(KEYS.TRANSACTIONS, 'NOT_JSON');
+  const result = StorageManager.load();
+  assertDeepEqual(result.transactions, [], 'Corrupt transactions must fall back to []');
+});
+
+test('StorageManager.load — corruption', 'evb_categories = "NOT_JSON" → categories defaults to preset', () => {
+  clearEvbStorage();
+  localStorage.setItem(KEYS.CATEGORIES, 'NOT_JSON');
+  const result = StorageManager.load();
+  assertDeepEqual(result.categories, ['Food', 'Transport', 'Fun'], 'Corrupt categories must fall back to defaults');
+});
+
+test('StorageManager.load — corruption', 'evb_theme = "badvalue" → theme defaults to "light"', () => {
+  clearEvbStorage();
+  localStorage.setItem(KEYS.THEME, 'badvalue');
+  const result = StorageManager.load();
+  assertEqual(result.theme, 'light', 'Unrecognised theme must fall back to "light"');
+});
+
+test('StorageManager.load — corruption', 'evb_transactions = "{}" (object, not array) → defaults to []', () => {
+  clearEvbStorage();
+  localStorage.setItem(KEYS.TRANSACTIONS, '{}');
+  const result = StorageManager.load();
+  assertDeepEqual(result.transactions, [], 'Non-array transactions value must fall back to []');
+});
+
+test('StorageManager.load — corruption', 'evb_categories = "null" (JSON null) → defaults to preset', () => {
+  clearEvbStorage();
+  localStorage.setItem(KEYS.CATEGORIES, 'null');
+  const result = StorageManager.load();
+  assertDeepEqual(result.categories, ['Food', 'Transport', 'Fun'], 'JSON null categories must fall back to defaults');
+});
+
+test('StorageManager.load — corruption', 'evb_transactions corrupt + others valid → only transactions falls back', () => {
+  clearEvbStorage();
+  localStorage.setItem(KEYS.TRANSACTIONS, 'CORRUPT');
+  localStorage.setItem(KEYS.CATEGORIES, JSON.stringify(['Custom']));
+  localStorage.setItem(KEYS.THEME, 'dark');
+  const result = StorageManager.load();
+  assertDeepEqual(result.transactions, [],         'Corrupt transactions must fall back independently');
+  assertDeepEqual(result.categories, ['Custom'],   'Valid categories must load correctly despite corrupt transactions');
+  assertEqual(result.theme, 'dark',                'Valid theme must load correctly despite corrupt transactions');
+});
+
+/* =====================================================================
+   SUITE 7 — computeBalance
+   ===================================================================== */
+
+test('computeBalance', 'Empty array → 0', () => {
+  assertEqual(computeBalance([]), 0, 'Balance of no transactions must be 0');
+});
+
+test('computeBalance', 'Single transaction → its amount', () => {
+  assertEqual(computeBalance([{ amount: 5.50 }]), 5.50, 'Balance of one transaction must equal that amount');
+});
+
+test('computeBalance', 'Multiple transactions → correct sum', () => {
+  const txs = [{ amount: 1.00 }, { amount: 2.50 }, { amount: 10.00 }];
+  assertEqual(computeBalance(txs), 13.50, 'Balance must equal arithmetic sum of amounts');
+});
+
+test('computeBalance', 'Large amount near max → stays precise', () => {
+  const txs = [{ amount: 999999999.99 }];
+  assertEqual(computeBalance(txs), 999999999.99, 'Single max-value transaction must be preserved');
+});
+
+/* =====================================================================
+   SUITE 8 — computeChartData
+   ===================================================================== */
+
+test('computeChartData', 'Empty array → returns null', () => {
+  const result = computeChartData([]);
+  if (result !== null) throw new Error(`Expected null but got: ${JSON.stringify(result)}`);
+});
+
+test('computeChartData', 'null input → returns null', () => {
+  const result = computeChartData(null);
+  if (result !== null) throw new Error(`Expected null but got: ${JSON.stringify(result)}`);
+});
+
+test('computeChartData', 'Single-category transactions → returns correct structure', () => {
+  const txs = [
+    { amount: 10, category: 'Food' },
+    { amount: 20, category: 'Food' },
+  ];
+  const result = computeChartData(txs);
+  if (result === null) throw new Error('Expected non-null result');
+  assertEqual(result.labels.length, 1, 'Should have 1 label');
+  assertEqual(result.percentages.length, 1, 'Should have 1 percentage');
+  assertEqual(result.amounts.length, 1, 'Should have 1 amount');
+  assertEqual(result.amounts[0], 30, 'Food total should be 30');
+  assertEqual(result.percentages[0], 100, 'Single category must be 100%');
+  assertEqual(result.labels[0], 'Food 100%', 'Label must include name and percentage');
+});
+
+test('computeChartData', 'Two-category split 50/50 → each 50%', () => {
+  const txs = [
+    { amount: 50, category: 'Food' },
+    { amount: 50, category: 'Transport' },
+  ];
+  const result = computeChartData(txs);
+  if (result === null) throw new Error('Expected non-null result');
+  assertEqual(result.labels.length, 2, 'Should have 2 labels');
+  const sortedPcts = [...result.percentages].sort();
+  assertEqual(sortedPcts[0], 50, 'First percentage should be 50');
+  assertEqual(sortedPcts[1], 50, 'Second percentage should be 50');
+});
+
+test('computeChartData', 'Two-category split 25/75 → correct percentages', () => {
+  const txs = [
+    { amount: 25, category: 'Food' },
+    { amount: 75, category: 'Transport' },
+  ];
+  const result = computeChartData(txs);
+  if (result === null) throw new Error('Expected non-null result');
+  // Find Food and Transport percentages
+  const foodIdx = result.labels.findIndex(l => l.startsWith('Food'));
+  const transIdx = result.labels.findIndex(l => l.startsWith('Transport'));
+  assertEqual(result.percentages[foodIdx], 25, 'Food should be 25%');
+  assertEqual(result.percentages[transIdx], 75, 'Transport should be 75%');
+});
+
+test('computeChartData', 'amounts array sums to grand total', () => {
+  const txs = [
+    { amount: 10, category: 'Food' },
+    { amount: 30, category: 'Transport' },
+    { amount: 60, category: 'Fun' },
+  ];
+  const result = computeChartData(txs);
+  if (result === null) throw new Error('Expected non-null result');
+  const total = result.amounts.reduce((s, a) => s + a, 0);
+  assertEqual(total, 100, 'amounts must sum to grand total');
+});
+
+test('computeChartData', 'labels follow "Category X%" format', () => {
+  const txs = [{ amount: 10, category: 'Food' }];
+  const result = computeChartData(txs);
+  if (result === null) throw new Error('Expected non-null result');
+  if (!/^Food \d+(\.\d+)?%$/.test(result.labels[0])) {
+    throw new Error(`Label format wrong: "${result.labels[0]}"`);
+  }
+});
+
+/* =====================================================================
+   SUITE 9 — monthlySummary
+   ===================================================================== */
+
+test('monthlySummary', 'Empty array → returns empty array', () => {
+  assertDeepEqual(monthlySummary([]), [], 'No transactions must yield no groups');
+});
+
+test('monthlySummary', '3 transactions in 1 month → 1 group', () => {
+  const txs = [
+    { amount: 10, date: '2024-06-01T00:00:00Z' },
+    { amount: 20, date: '2024-06-15T00:00:00Z' },
+    { amount: 30, date: '2024-06-30T00:00:00Z' },
+  ];
+  const result = monthlySummary(txs);
+  assertEqual(result.length, 1, 'Should produce 1 group');
+  assertEqual(result[0].count, 3, 'Group should contain 3 transactions');
+  assertEqual(result[0].total, 60, 'Group total should be 60');
+});
+
+test('monthlySummary', '3 transactions across 2 months → 2 groups', () => {
+  const txs = [
+    { amount: 10, date: '2024-05-01T00:00:00Z' },
+    { amount: 20, date: '2024-05-15T00:00:00Z' },
+    { amount: 30, date: '2024-06-01T00:00:00Z' },
+  ];
+  const result = monthlySummary(txs);
+  assertEqual(result.length, 2, 'Should produce 2 groups');
+});
+
+test('monthlySummary', '3 transactions across 2 months → correct totals per group', () => {
+  const txs = [
+    { amount: 10, date: '2024-05-01T00:00:00Z' },
+    { amount: 20, date: '2024-05-15T00:00:00Z' },
+    { amount: 30, date: '2024-06-01T00:00:00Z' },
+  ];
+  const result = monthlySummary(txs);
+  // Groups are sorted descending: June first, then May
+  assertEqual(result[0].key, '2024-06', 'First group should be June (most recent)');
+  assertEqual(result[0].total, 30, 'June total should be 30');
+  assertEqual(result[0].count, 1, 'June should have 1 transaction');
+  assertEqual(result[1].key, '2024-05', 'Second group should be May');
+  assertEqual(result[1].total, 30, 'May total should be 30 (10+20)');
+  assertEqual(result[1].count, 2, 'May should have 2 transactions');
+});
+
+test('monthlySummary', 'groups sorted descending (most recent first)', () => {
+  const txs = [
+    { amount: 5,  date: '2024-01-01T00:00:00Z' },
+    { amount: 10, date: '2024-03-01T00:00:00Z' },
+    { amount: 15, date: '2024-02-01T00:00:00Z' },
+  ];
+  const result = monthlySummary(txs);
+  assertEqual(result.length, 3, 'Should produce 3 groups');
+  assertEqual(result[0].key, '2024-03', 'March should be first (most recent)');
+  assertEqual(result[1].key, '2024-02', 'February should be second');
+  assertEqual(result[2].key, '2024-01', 'January should be last');
+});
+
+test('monthlySummary', 'sum of all group totals equals sum of transaction amounts', () => {
+  const txs = [
+    { amount: 100, date: '2024-01-01T00:00:00Z' },
+    { amount: 200, date: '2024-02-01T00:00:00Z' },
+    { amount: 300, date: '2024-02-15T00:00:00Z' },
+    { amount: 400, date: '2024-03-01T00:00:00Z' },
+  ];
+  const result = monthlySummary(txs);
+  const groupSum = result.reduce((s, g) => s + g.total, 0);
+  assertEqual(groupSum, 1000, 'Sum of group totals must match sum of transaction amounts');
+});
+
+test('monthlySummary', 'each group has a valid key in YYYY-MM format', () => {
+  const txs = [
+    { amount: 10, date: '2024-11-26T00:00:00Z' },
+    { amount: 20, date: '2025-01-01T00:00:00Z' },
+  ];
+  const result = monthlySummary(txs);
+  result.forEach(g => {
+    if (!/^\d{4}-\d{2}$/.test(g.key)) {
+      throw new Error(`Group key "${g.key}" is not in YYYY-MM format`);
+    }
+  });
+});
+
+/* =====================================================================
+   SUITE 10 — formatCurrency
+   ===================================================================== */
+
+test('formatCurrency', 'formatCurrency(0) → "$0.00"', () => {
+  assertEqual(formatCurrency(0), '$0.00', 'Zero must format as $0.00');
+});
+
+test('formatCurrency', 'formatCurrency(1) → "$1.00"', () => {
+  assertEqual(formatCurrency(1), '$1.00', 'Integer 1 must format as $1.00');
+});
+
+test('formatCurrency', 'formatCurrency(1234.5) → "$1,234.50"', () => {
+  assertEqual(formatCurrency(1234.5), '$1,234.50', '1234.5 must format with comma and trailing zero');
+});
+
+test('formatCurrency', 'formatCurrency(0.01) → "$0.01"', () => {
+  assertEqual(formatCurrency(0.01), '$0.01', 'Minimum amount must format correctly');
+});
+
+test('formatCurrency', 'formatCurrency(999999999.99) → includes $ and commas', () => {
+  const result = formatCurrency(999999999.99);
+  if (!result.startsWith('$')) throw new Error(`Expected $ prefix, got: "${result}"`);
+  if (!result.includes(',')) throw new Error(`Expected thousands separators, got: "${result}"`);
+  if (!result.endsWith('.99')) throw new Error(`Expected .99 suffix, got: "${result}"`);
+});
+
+test('formatCurrency', 'formatCurrency(1234.567) rounds to 2 dp → "$1,234.57"', () => {
+  // toLocaleString with currency style always rounds to 2 decimal places
+  const result = formatCurrency(1234.567);
+  assertEqual(result, '$1,234.57', '3dp input must be rounded to 2dp in output');
+});
+
+/* =====================================================================
+   SUITE 11 — validateCategoryName
+   ===================================================================== */
+
+test('validateCategoryName', 'Blank name "" → returns error', () => {
+  assertError(validateCategoryName('', []), 'Blank name must be rejected');
+});
+
+test('validateCategoryName', 'Whitespace-only "   " → returns error', () => {
+  assertError(validateCategoryName('   ', []), 'Whitespace-only name must be rejected');
+});
+
+test('validateCategoryName', 'null → returns error', () => {
+  assertError(validateCategoryName(null, []), 'null name must be rejected');
+});
+
+test('validateCategoryName', '51-char name → returns error (too long)', () => {
+  assertError(validateCategoryName('a'.repeat(51), []), 'Name over 50 chars must be rejected');
+});
+
+test('validateCategoryName', '50-char name → returns null (at limit)', () => {
+  assertNull(validateCategoryName('a'.repeat(50), []), 'Exactly 50 chars is valid');
+});
+
+test('validateCategoryName', 'Valid unique name → returns null', () => {
+  assertNull(validateCategoryName('Healthcare', ['Food', 'Transport']), 'Unique non-empty name must be accepted');
+});
+
+test('validateCategoryName', 'Exact duplicate → returns error', () => {
+  assertError(validateCategoryName('Food', ['Food', 'Transport']), 'Exact duplicate must be rejected');
+});
+
+test('validateCategoryName', 'Case-insensitive duplicate "food" vs "Food" → returns error', () => {
+  assertError(validateCategoryName('food', ['Food', 'Transport']), '"food" is a duplicate of "Food" (case-insensitive)');
+});
+
+test('validateCategoryName', 'Case-insensitive duplicate "FOOD" vs "Food" → returns error', () => {
+  assertError(validateCategoryName('FOOD', ['Food']), '"FOOD" is a duplicate of "Food"');
+});
+
+test('validateCategoryName', 'Case-insensitive duplicate "Food" vs "food" → returns error', () => {
+  assertError(validateCategoryName('Food', ['food']), '"Food" is a duplicate of "food"');
+});
+
+test('validateCategoryName', 'Whitespace-padded variant "  Food  " vs "Food" → returns error', () => {
+  assertError(validateCategoryName('  Food  ', ['Food']), 'Trimmed duplicate must be rejected');
+});
+
+test('validateCategoryName', 'Non-duplicate after trimming "  Dining  " → returns null', () => {
+  assertNull(validateCategoryName('  Dining  ', ['Food', 'Transport']), 'Trimmed unique name must be accepted');
+});
+
+/* =====================================================================
+   RENDER RESULTS
+   ===================================================================== */
+
+;(function renderResults() {
+  const output  = document.getElementById('output');
+  const footer  = document.getElementById('footer');
+  const total   = results.length;
+  const passed  = results.filter(r => r.pass).length;
+  const failed  = total - passed;
+
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-pass').textContent  = passed;
+  document.getElementById('stat-fail').textContent  = failed;
+
+  // Group by suite
+  const suites = {};
+  results.forEach(r => {
+    if (!suites[r.suite]) suites[r.suite] = [];
+    suites[r.suite].push(r);
+  });
+
+  Object.entries(suites).forEach(([suiteName, tests]) => {
+    const suitePass = tests.filter(t => t.pass).length;
+    const div = document.createElement('div');
+    div.className = 'suite';
+
+    const title = document.createElement('div');
+    title.className = 'suite-title';
+    title.innerHTML =
+      `${suiteName} <span>${suitePass}/${tests.length} passed</span>`;
+    div.appendChild(title);
+
+    tests.forEach(r => {
+      const row = document.createElement('div');
+      row.className = `test ${r.pass ? 'pass' : 'fail'}`;
+
+      const badge = document.createElement('span');
+      badge.className = `badge ${r.pass ? 'pass' : 'fail'}`;
+      badge.textContent = r.pass ? 'PASS' : 'FAIL';
+
+      const label = document.createElement('div');
+      label.className = 'test-label';
+      // Wrap `code` portions (backtick-delimited)
+      label.innerHTML = r.label.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+      row.appendChild(badge);
+      row.appendChild(label);
+
+      if (!r.pass && r.error) {
+        const errBlock = document.createElement('div');
+        errBlock.className = 'error-block';
+        errBlock.textContent = r.error;
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = 'flex:1;min-width:0';
+        wrapper.appendChild(label);
+        wrapper.appendChild(errBlock);
+        row.replaceChild(wrapper, label);
+      }
+
+      div.appendChild(row);
+    });
+
+    output.appendChild(div);
+  });
+
+  const allPass = failed === 0;
+  footer.innerHTML =
+    `<strong style="color:${allPass ? '#34d399' : '#f87171'}">` +
+    `${allPass ? '✅ All tests passed!' : `❌ ${failed} test${failed !== 1 ? 's' : ''} failed.`}` +
+    `</strong> &nbsp; Run at ${new Date().toLocaleTimeString()}.`;
+})();
+</script>
+</body>
+</html>
